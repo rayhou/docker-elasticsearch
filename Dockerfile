@@ -4,11 +4,10 @@ MAINTAINER pjpires@gmail.com
 # Export HTTP & Transport
 EXPOSE 9200 9300
 
-ENV VERSION 2.4.1
+ENV VERSION 2.4.6
 
 # Install Elasticsearch.
 RUN apk add --update curl ca-certificates sudo && \
-
   ( curl -Lskj https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$VERSION/elasticsearch-$VERSION.tar.gz | \
   gunzip -c - | tar xf - ) && \
   mv /elasticsearch-$VERSION /elasticsearch && \
@@ -36,5 +35,19 @@ ENV HTTP_CORS_ALLOW_ORIGIN *
 ENV NUMBER_OF_MASTERS 1
 ENV NUMBER_OF_SHARDS 1
 ENV NUMBER_OF_REPLICAS 0
+
+# Override elasticsearch.yml config, otherwise plug-in install will fail
+ADD do_not_use.yml /elasticsearch/config/elasticsearch.yml
+
+# Install Elasticsearch plug-ins
+# RUN /elasticsearch/bin/plugin install rayhou/elasticsearch-cloud-kubernetes/2.4.6 --verbose
+RUN /elasticsearch/bin/plugin install https://github.com/rayhou/elasticsearch-cloud-kubernetes/raw/2.4.x/target/releases/elasticsearch-cloud-kubernetes-2.4.6.zip --verbose
+
+# Override elasticsearch.yml config, otherwise plug-in install will fail
+ADD elasticsearch.yml /elasticsearch/config/elasticsearch.yml
+
+# Set environment
+ENV NAMESPACE default
+ENV DISCOVERY_SERVICE elasticsearch-discovery
 
 CMD ["/run.sh"]
